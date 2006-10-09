@@ -1,0 +1,7 @@
+TODO
+
+DONE 1. Create Level Label in upper right hand corner
+DONE 2. Advance level when all destructible bricks have been cleared
+DONE 3. Increase ball speed every so often in level
+4. Create 3 lives and change state between them correctly
+DONE 5. Launch ball from paddle at beginning of game
