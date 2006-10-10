@@ -117,7 +117,7 @@ class PyBreakout:
 		self.size = GB_WIDTH, GB_HEIGHT
 		self.height = self.size[1]
 		self.width = self.size[0]
-		self.level = 5
+		self.level = 0
 		self.speed = 0
 		self.numDestructibleBricks = 0
 		
@@ -345,6 +345,10 @@ class PyBreakout:
 					self.ball.y_dir = -1
 				
 				self.points += brick.pointValue
+				if (self.points == 500):
+					self.numLives +=1
+				elif (self.points == 2000):
+					self.numLives +=1
 				if(brick.isDestructible):
 					brick.isDestroyed = True
 					self.numDestructibleBricks -=1
