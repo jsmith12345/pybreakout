@@ -9,10 +9,10 @@ RGB_WHITE 	= 255,255,255
 RGB_RED		= 255,0,0
 
 GB_WIDTH	= 280
-GB_HEIGHT	= 480
+GB_HEIGHT	= 380
 
-PADDLE_START_TOP = 450
-PADDLE_START_LEFT = 140
+PADDLE_START_TOP = GB_HEIGHT - 30
+PADDLE_START_LEFT = GB_WIDTH / 2
 
 STARTSPEED = 5
 
@@ -114,16 +114,17 @@ class PyBreakout:
 		self.ball = Ball(join("resources","images","ball-mini.png"))
 		self.paddle = Paddle(join("resources","images","paddle.png"),self.ball)
 		
-		self.size = 280, 480
+		self.size = GB_WIDTH, GB_HEIGHT
 		self.height = self.size[1]
 		self.width = self.size[0]
-		self.level = 0
+		self.level = 5
 		self.speed = 0
 		self.numDestructibleBricks = 0
 		
 		#Load bricks
 		self.bricks = self.loadBricks()
 		
+		self.numLives = 2
 		self.points = 0
 		self.pointsColor = RGB_WHITE
 		self.font = pygame.font.Font(join("resources","fonts","Verdana.TTF"),12)
@@ -142,7 +143,7 @@ class PyBreakout:
 		allBricks = []
 		levelFile = open('level'+str(self.level)+".dat")
 		levelData = levelFile.readlines()
-		self.drawLocation = [0,160]
+		self.drawLocation = [0,120]
 		for levelLine in levelData:
 			lineBricks = levelLine.strip().split(',')
 			for brickChar in lineBricks:
@@ -198,17 +199,48 @@ class PyBreakout:
 		#Draw Bricks for current level
 		self.drawBricks()
 		
+		#Draw Mini-paddles signifying lifes left
+		self.drawMiniPaddles()
+		
 		pygame.display.flip()
+	
+	def drawMiniPaddles(self):
+		if(self.numLives == 0):
+			return
+		drawPos = 0
+		miniPaddleImage = pygame.image.load(join("resources","images","paddle-mini.png"))
+		miniPaddleRect = miniPaddleImage.get_rect()
+		for numLife in range(self.numLives):
+			self.screen.blit(miniPaddleImage,(0+drawPos,GB_HEIGHT-miniPaddleRect.height))
+			drawPos = drawPos + 22
 		
 	def reset(self):
 		"Start a new game, reset everything to default positions and states"
 		self.ball = Ball(join("resources","images","ball-mini.png"))
 		self.paddle = Paddle(join("resources","images","paddle.png"),self.ball)
 		
-		self.points = 0
 		self.pointsColor = RGB_WHITE
 		self.running = True
-		self.speed = 1
+		self.speed = 0
+		
+	def startGame(self):
+		self.points = 0
+		self.level = 0
+		self.speed = 0
+		self.numDestructibleBricks = 0
+		self.ball = Ball(join("resources","images","ball-mini.png"))
+		self.paddle = Paddle(join("resources","images","paddle.png"),self.ball)
+		
+		#Load bricks
+		self.bricks = self.loadBricks()
+		
+		self.numLives = 2
+		self.font = pygame.font.Font(join("resources","fonts","Verdana.TTF"),12)
+		self.pointsLabel = self.font.render("Points: ", True, RGB_WHITE)
+		self.pointsString = self.font.render(str(self.points), True, self.pointsColor)
+		self.levelLabel = self.font.render("Level: ", True, RGB_WHITE)
+		self.levelString = self.font.render(str(self.level), True, RGB_WHITE)
+		self.running = True
 		
 	def play(self):
 		"The main game loop occurs here, checks for keyboard input, updates game state, etc..."
@@ -231,16 +263,33 @@ class PyBreakout:
 				if self.ball.stuck:
 					self.ball.stuck = False
 			elif keys[K_RETURN]:
-				self.reset()
+				if not self.ball.stuck:
+					if self.numLives >=1:
+						self.numLives -=1
+						self.reset()
+						print "self.numLives = %s"%self.numLives
+					else:
+						#TODO: this is where I need to put a GAMEOVER prompt
+						self.endgame()
+			elif keys[K_y]:
+				print "K_Y pressed launch brand new game"
+				self.startGame()
+
+				
 		
 			if self.running:
 				self.checkBallCollision()
 				self.ball.autoMove()
 				
+				self.pointsString = self.font.render(str(self.points), True, self.pointsColor)
+				self.updateScreen()
+				
 				if not self.ball.stuck:
 					if self.checkBallOffScreen():
 						self.running = False
 						self.pointsColor = RGB_RED
+						if self.numLives == 0:
+							self.endgame()
 					
 					if self.checkLevelUp():
 						self.level += 1
@@ -249,18 +298,17 @@ class PyBreakout:
 						self.ball = Ball(join("resources","images","ball-mini.png"))
 						self.paddle = Paddle(join("resources","images","paddle.png"),self.ball)
 					
-				self.pointsString = self.font.render(str(self.points), True, self.pointsColor)
-				self.updateScreen()
+
 			
-			#Wait a couple of milliseconds
-			currentTime = time.time()
-			if(currentTime - lastLevelUpTime > 15):
-				lastLevelUpTime = currentTime
-				if (STARTSPEED - self.speed > 0):
-					print "15 s elapsed increasing speed by 1"
-					self.speed +=1
-				else:
-					print "reached max speed"
+				#Wait a couple of milliseconds
+				currentTime = time.time()
+				if(currentTime - lastLevelUpTime > 15):
+					lastLevelUpTime = currentTime
+					if (STARTSPEED - self.speed > 0):
+						print "15 s elapsed increasing speed by 1"
+						self.speed +=1
+					else:
+						print "reached max speed"
 				
 			pygame.time.wait(STARTSPEED - self.speed)
 		
@@ -312,6 +360,15 @@ class PyBreakout:
 		if(self.ball.rect.top >= GB_HEIGHT):
 			return True
 		return False
+	
+	def endgame(self):
+		print "endgame called!"
+		self.gameOverLabel = self.font.render("GAME OVER", True, RGB_WHITE)
+		#self.playAgainLabel = self.font.render("Play Again? (y) ", True, RGB_WHITE)
+		self.screen.blit(self.gameOverLabel,(105, 60))
+		self.pointsColor = RGB_RED
+		#self.screen.blit(self.playAgainLabel,(90, 95))
+		pygame.display.flip()
 			
 if __name__ == '__main__':
 	pygame.init()

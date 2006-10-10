@@ -1,8 +1,8 @@
-R,.,.,.,.,.,R
-O,O,.,.,.,O,O
-G,G,G,.,G,G,G
-B,B,B,.,B,B,B
-P,P,P,.,P,P,P
-R,R,R,.,R,R,R
-O,O,O,.,O,O,O
-G,Q,Q,.,Q,Q,G
+.,R,R,.,R,R,.
+.,O,O,.,O,O,.
+.,G,G,.,G,G,.
+.,B,B,Q,B,B,.
+.,P,P,Q,P,P,.
+.,R,R,.,R,R,.
+.,O,O,.,O,O,.
+.,G,G,.,G,G,.
