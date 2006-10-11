@@ -1,8 +1,9 @@
-import pygame, math, time
+import pygame, math, time, soundmanager
 from pygame.locals import *
 from os.path import join
 from sys import exit
 from random import randrange,randint
+
 
 RGB_BLACK 	= 0,0,0
 RGB_WHITE 	= 255,255,255
@@ -53,8 +54,9 @@ class Ball:
 		self.rect = self.rect.move(pixelsRight, 0)
 		
 	def autoMove(self):
+		hitWall = False
 		if self.stuck:
-			pass
+			return hitWall
 		else:
 			x_part = math.cos(math.radians(self.angle))/self.speed
 			y_part = math.sin(math.radians(self.angle))/self.speed
@@ -62,13 +64,17 @@ class Ball:
 			
 			if self.rect.left == 0:
 				self.x_dir = 1
+				hitWall = True
 			if self.rect.right == GB_WIDTH:
 				self.x_dir = -1
+				hitWall = True
 			if self.rect.top == 0:
 				self.y_dir = 1
+				hitWall = True
 			
 			#print "x_dir = %s, y_dir = %s, x = %s, y = %s"%(self.x_dir,self.y_dir,self.rect.x,self.rect.y)
 			self.rect = self.rect.move(self.x_dir, self.y_dir)
+			return hitWall
 
 class Paddle:
 	"A Paddle object"
@@ -132,6 +138,7 @@ class PyBreakout:
 		self.pointsString = self.font.render(str(self.points), True, self.pointsColor)
 		self.levelLabel = self.font.render("Level: ", True, RGB_WHITE)
 		self.levelString = self.font.render(str(self.level), True, RGB_WHITE)
+		self.soundManager = soundmanager.SoundManager()
 		self.initializeScreen()
 		
 	def initializeScreen(self):
@@ -141,7 +148,7 @@ class PyBreakout:
 		
 	def loadBricks(self):
 		allBricks = []
-		levelFile = open('level'+str(self.level)+".dat")
+		levelFile = open(join('resources','levels','level'+str(self.level)+".dat"))
 		levelData = levelFile.readlines()
 		self.drawLocation = [0,120]
 		for levelLine in levelData:
@@ -281,19 +288,21 @@ class PyBreakout:
 					if self.numLives >=1:
 						self.numLives -=1
 						self.reset()
-						print "self.numLives = %s"%self.numLives
+						#print "self.numLives = %s"%self.numLives
 					else:
 						#TODO: this is where I need to put a GAMEOVER prompt
 						self.endgame()
 			elif keys[K_y]:
-				print "K_Y pressed launch brand new game"
+				#print "K_Y pressed launch brand new game"
 				self.startGame()
 
 				
 		
 			if self.running:
 				self.checkBallCollision()
-				self.ball.autoMove()
+				hitWall = self.ball.autoMove()
+				if hitWall:
+					self.soundManager.play('cartoon-spring-sound',[0.2,0.2])
 				
 				self.pointsString = self.font.render(str(self.points), True, self.pointsColor)
 				self.updateScreen()
@@ -309,6 +318,7 @@ class PyBreakout:
 						self.level += 1
 						self.levelString = self.font.render(str(self.level), True, RGB_WHITE)
 						self.bricks = self.loadBricks()
+						self.speed = 1
 						self.ball = Ball(join("resources","images","ball-mini.png"))
 						self.paddle = Paddle(join("resources","images","paddle.png"),self.ball)
 					
@@ -319,10 +329,10 @@ class PyBreakout:
 				if(currentTime - lastLevelUpTime > 15):
 					lastLevelUpTime = currentTime
 					if (STARTSPEED - self.speed > 0):
-						print "15 s elapsed increasing speed by 1"
+						#print "15 s elapsed increasing speed by 1"
 						self.speed +=1
-					else:
-						print "reached max speed"
+					#else:
+						#print "reached max speed"
 				
 			pygame.time.wait(STARTSPEED - self.speed)
 		
@@ -339,11 +349,16 @@ class PyBreakout:
 				self.ball.y_dir = -1 * self.ball.y_dir				
 			else:
 				self.ball.y_dir = -1
+			#paddle and ball collided, play appropriate sound
+			self.soundManager.play('cartoon-blurp-sound',[0.3,0.3])
 		#check for collision with any non-destroyed bricks
 		for brick in self.bricks:
 			if(brick.isDestroyed):
 				pass
 			elif(self.ball.rect.colliderect(brick.rect)):
+				if not brick.isDestructible:
+					#indestructible brick and ball collided, play appropriate sound
+					self.soundManager.play('cartoon-blurp-sound',[0.3,0.3])
 				testpointright = self.ball.rect.left+self.ball.rect.width+1,self.ball.rect.top
 				testpointleft = self.ball.rect.left-1,self.ball.rect.top
 				testpointtop = self.ball.rect.left,self.ball.rect.top-1
@@ -370,11 +385,14 @@ class PyBreakout:
 				self.points += brick.pointValue
 				if (self.points == 500):
 					self.numLives +=1
+					self.soundManager.play('triangle',[0.3,0.3])
 				elif (self.points == 2000):
 					self.numLives +=1
+					self.soundManager.play('triangle',[0.3,0.3])
 				if(brick.isDestructible):
 					brick.isDestroyed = True
 					self.numDestructibleBricks -=1
+					self.soundManager.play('punchhard',[0.3,0.3])
 					#print "numDestructibleBricks = %s"%self.numDestructibleBricks
 				break
 	
@@ -389,7 +407,7 @@ class PyBreakout:
 		return False
 	
 	def endgame(self):
-		print "endgame called!"
+		#print "endgame called!"
 		self.gameOverLabel = self.font.render("GAME OVER", True, RGB_WHITE)
 		#self.playAgainLabel = self.font.render("Play Again? (y) ", True, RGB_WHITE)
 		self.screen.blit(self.gameOverLabel,(105, 60))
