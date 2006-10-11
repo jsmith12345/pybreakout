@@ -252,17 +252,31 @@ class PyBreakout:
 				if event.type == pygame.QUIT: exit()
 				
 			keys = pygame.key.get_pressed()
+			mouse_x = pygame.mouse.get_pos()[0]
+			button1,button2,button3 = pygame.mouse.get_pressed()
 			
-			if keys[K_LEFT]:
-				if self.paddle.rect.left > 0:
+			#print "mouse_x = %s"%mouse_x
+			mousePosEqual = True
+			while mousePosEqual:
+				mousePosEqual = mouse_x != self.paddle.rect.left
+				if mouse_x < self.paddle.rect.left:
 					self.paddle.moveLeft(1)
-			elif keys[K_RIGHT]:
-				if self.paddle.rect.right < self.width:
-					self.paddle.moveRight(1)
-			elif keys[K_SPACE]:
+				elif mouse_x > self.paddle.rect.left:
+					if self.paddle.rect.right < self.width:
+						self.paddle.moveRight(1)
+					else:
+						mousePosEqual = False
+			
+			#if keys[K_LEFT]:
+			#	if self.paddle.rect.left > 0:
+			#		self.paddle.moveLeft(1)
+			#elif keys[K_RIGHT]:
+			#	if self.paddle.rect.right < self.width:
+			#		self.paddle.moveRight(1)
+			if keys[K_SPACE] or button1:
 				if self.ball.stuck:
 					self.ball.stuck = False
-			elif keys[K_RETURN]:
+			elif keys[K_RETURN] or button2 or button3:
 				if not self.ball.stuck:
 					if self.numLives >=1:
 						self.numLives -=1
@@ -315,7 +329,16 @@ class PyBreakout:
 	def checkBallCollision(self):
 		if(self.ball.rect.colliderect(self.paddle.rect)):
 			#Check if it is a vertical collision or horizontal collision
-			self.ball.y_dir = -1
+			leftTen = self.paddle.rect.left + 10
+			rightTen = self.paddle.rect.left + 30
+			if self.ball.rect.left < leftTen:
+				self.ball.x_dir = -1
+				self.ball.y_dir = -1 * self.ball.y_dir
+			elif self.ball.rect.left > rightTen:
+				self.ball.x_dir = 1
+				self.ball.y_dir = -1 * self.ball.y_dir				
+			else:
+				self.ball.y_dir = -1
 		#check for collision with any non-destroyed bricks
 		for brick in self.bricks:
 			if(brick.isDestroyed):
