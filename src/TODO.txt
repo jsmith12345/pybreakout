@@ -5,4 +5,7 @@ DONE 2. Advance level when all destructible bricks have been cleared
 DONE 3. Increase ball speed every so often in level
 DONE 4. Create 3 lives and change state between them correctly
 DONE 5. Launch ball from paddle at beginning of game
-6. Create an Endgame screen
+DONE 6. Create an Endgame screen
+DONE 7. Change paddle control to mouse movement
+DONE 8. Ball redirection depending on position of paddle
+9. Bonuses fall from the heavens, tri-ball, slow down, lazers
