@@ -1,5 +1,6 @@
 import pygame, math, time, soundmanager
 from pygame.locals import *
+from utilities.common import Describer
 from os.path import join
 from sys import exit
 from random import randrange,randint
@@ -17,7 +18,7 @@ PADDLE_START_LEFT = GB_WIDTH / 2
 
 STARTSPEED = 5
 
-class Ball:
+class Ball(Describer):
 	"Create a common Ball object"
 	def __init__(self, imageFilename):
 		self.image = pygame.image.load(imageFilename)
@@ -34,12 +35,14 @@ class Ball:
 		"Ball is reset to sit motionless on top of paddle, launch with Spacebar"
 		self.rect = self.rect.move(PADDLE_START_LEFT+30, PADDLE_START_TOP-self.rect.height)
 		
-	def __repr__(self):
-		return """<Instance of Ball
-\t image=%s
-\t rect=%s
-\t stuck=%s
->"""%(self.image,self.rect,self.stuck)
+#===============================================================================
+#	def __repr__(self):
+#		return """<Instance of Ball
+#\t image=%s
+#\t rect=%s
+#\t stuck=%s
+#>"""%(self.image,self.rect,self.stuck)
+#===============================================================================
 						
 	def moveDown(self, pixelsDown):
 		self.rect = self.rect.move(0,pixelsDown)
@@ -76,7 +79,7 @@ class Ball:
 			self.rect = self.rect.move(self.x_dir, self.y_dir)
 			return hitWall
 
-class Paddle:
+class Paddle(Describer):
 	"A Paddle object"
 	def __init__(self, imageFilename, ball):
 		self.image = pygame.image.load(imageFilename)
@@ -98,7 +101,7 @@ class Paddle:
 		if self.ball.stuck:
 			self.ball.rect = self.ball.rect.move(pixelsRight,0)
 
-class Brick:
+class Brick(Describer):
 	"""every brick has the following
 	an image: filename
 	point value: int
@@ -253,6 +256,9 @@ class PyBreakout:
 		"The main game loop occurs here, checks for keyboard input, updates game state, etc..."
 		self.running = True
 		lastLevelUpTime = time.time()
+		#Excellent suggestions from Peter Nosgoth to have tighter control over Mouse
+		pygame.mouse.set_visible(False)
+		pygame.event.set_grab(True)
 		
 		while 1:
 			for event in pygame.event.get():
@@ -295,6 +301,8 @@ class PyBreakout:
 			elif keys[K_y]:
 				#print "K_Y pressed launch brand new game"
 				self.startGame()
+			elif keys[K_ESCAPE]:
+				exit()
 
 				
 		
@@ -303,6 +311,7 @@ class PyBreakout:
 				hitWall = self.ball.autoMove()
 				if hitWall:
 					self.soundManager.play('cartoon-spring-sound',[0.2,0.2])
+					print self.ball
 				
 				self.pointsString = self.font.render(str(self.points), True, self.pointsColor)
 				self.updateScreen()
