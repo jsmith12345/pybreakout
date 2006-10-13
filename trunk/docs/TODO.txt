@@ -17,3 +17,4 @@ KNOWN BUGS:
 FIXED 1. If you have 500 points and you hit as long as you keep hitting indestructible blocks you will keep getting extra lifes :) Need to create an easy test level for this.
 FIXED 2. If you right click with your last life it puts you into a quasi-gameover state.
 3. It is possible to get into infinite bounce loops with the current model and levels
+FIXED 4. Can call endgame repeatedly

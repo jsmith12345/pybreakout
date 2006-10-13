@@ -406,6 +406,8 @@ class PyBreakout(Describer):
 	
 	def endgame(self):
 		#print "endgame called!"
+		if self.gameOver:
+			return
 		self.gameOverLabel = self.font.render("GAME OVER", True, RGB_WHITE)
 		self.playAgainLabel = self.font.render("Play Again?", True, RGB_WHITE)
 		self.instructionsLabel = self.font.render("YES (y) / NO (ESC)", True, RGB_WHITE)
