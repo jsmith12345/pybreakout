@@ -9,8 +9,11 @@ DONE 6. Create an Endgame screen
 DONE 7. Change paddle control to mouse movement
 DONE 8. Ball redirection depending on position of paddle
 9. Bonuses fall from the heavens, tri-ball, slow down, lazers
-
+10. Improve the paddle control over where the ball is going to go. You can still get into infinite loops of ball direction with the limited control you have.
+DONE 11. Create a simple way to restart the game when your game is over. Press 'y' for a new game. With appropriate screen.
 
 KNOWN BUGS:
 
-1. If you have 500 points and you hit as long as you keep hitting indestructible blocks you will keep getting extra lifes :)
+FIXED 1. If you have 500 points and you hit as long as you keep hitting indestructible blocks you will keep getting extra lifes :) Need to create an easy test level for this.
+FIXED 2. If you right click with your last life it puts you into a quasi-gameover state.
+3. It is possible to get into infinite bounce loops with the current model and levels
