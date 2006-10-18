@@ -284,7 +284,6 @@ class PyBreakout(Describer):
 						self.reset()
 						#print "self.numLives = %s"%self.numLives
 					else:
-						#TODO: this is where I need to put a GAMEOVER prompt
 						self.running = False
 						self.endgame()
 			elif keys[K_y]:
