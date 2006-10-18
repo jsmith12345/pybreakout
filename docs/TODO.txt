@@ -18,3 +18,11 @@ FIXED 1. If you have 500 points and you hit as long as you keep hitting indestru
 FIXED 2. If you right click with your last life it puts you into a quasi-gameover state.
 3. It is possible to get into infinite bounce loops with the current model and levels
 FIXED 4. Can call endgame repeatedly
+
+
+Version 0.3 Features:
+
+* Tighter Mouse Control over the Paddle
+* 3 ball bonus, Slow ball bonus, and Sticky ball bonus
+DONE * Several Bug fixes
+DONE * Smaller distribution for windows version, used --bundle 2 option so that dist folder only has 5 files instead of 36

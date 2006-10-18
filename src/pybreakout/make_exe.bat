@@ -12,7 +12,7 @@ rd /S /Q dist
 echo Done
 
 echo Creating new executable based on setup.py
-python setup.py py2exe > py2exe.log
+python setup.py py2exe --bundle 2 > py2exe.log
 echo Done, check out the new 'py2exe.log' for details
 
 pause
