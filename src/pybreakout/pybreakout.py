@@ -77,6 +77,54 @@ class Ball(Describer):
 			self.rect = self.rect.move(self.x_dir, self.y_dir)
 			return hitWall
 
+class Bonus(Describer):
+	"Bonus class, represents the bonus object for the PyBreakout game"
+	
+	def __init__(self, imageFilename):
+		self.image = pygame.image.load(imageFilename)
+		self.rect = self.image.get_rect()
+		self.speed = 1
+		self.x_dir = 0
+		self.y_dir = 1	
+						
+	def moveDown(self, pixelsDown):
+		"Move the bonus image down pixelsDown worth"
+		self.rect = self.rect.move(0,pixelsDown)
+		
+class Triball(Bonus):
+	def __init__(self, myBrick):
+		Bonus.__init__(self,join("resources","images","triball-bonus.png"))
+		self.rect.move_ip(myBrick.position)
+		
+	def applyBonus(self, pybreakout):
+		#print "this is where I add two additional balls"
+		ball1 = Ball(join("resources","images","ball-mini.png"))
+		ball2 = Ball(join("resources","images","ball-mini.png"))
+		self.adjustBall(ball1,5,pybreakout)
+		self.adjustBall(ball2,-5,pybreakout)
+		pybreakout.balls.append(ball1)
+		pybreakout.balls.append(ball2)
+	
+		
+	def adjustBall(self,currentBall,numPixels,pybreakout):
+		currentBall.rect.top = 0
+		currentBall.rect.left = 0
+		#print "pybreakout.balls[1].rect = " + str(pybreakout.balls[1].rect)
+		currentBall.rect.move_ip(pybreakout.balls[0].rect.x,pybreakout.balls[0].rect.y+numPixels)
+		#print "pybreakout.balls[1].rect after moving to balls[0] = " + str(pybreakout.balls[1].rect)
+		currentBall.stuck = False
+		currentBall.x_dir = pybreakout.balls[0].x_dir
+		currentBall.y_dir = pybreakout.balls[0].y_dir
+
+class Slowball(Bonus):
+	def __init__(self, myBrick):
+		Bonus.__init__(self,join("resources","images","slowball-bonus.png"))
+		self.rect.move_ip(myBrick.position)
+		
+	def applyBonus(self, pybreakout):
+		pybreakout.speed = 0
+
+		
 class Paddle(Describer):
 	"A Paddle object"
 	
@@ -116,6 +164,12 @@ class Brick(Describer):
 		self.pointValue = value
 		self.isDestructible = destructible
 		self.isDestroyed = destroyed
+		self.hasBonus = False
+
+	
+	def addBonus(self, bonusType):
+		self.hasBonus = True
+		self.bonus = bonusType
 
 class PyBreakout(Describer):
 	"This is the main game class for PyBreakout"
@@ -138,6 +192,7 @@ class PyBreakout(Describer):
 		self.updateScreen()
 		
 	def loadBricks(self):
+		self.bonuses = []
 		allBricks = []
 		levelFile = open(join('resources','levels','level'+str(self.level)+".dat"))
 		levelData = levelFile.readlines()
@@ -160,17 +215,32 @@ class PyBreakout(Describer):
 	def createBrick(self, brickChar):
 		"Given a brickChar, create the appropriate instance object of the Brick class and return it"
 		
-		newBrick = 0
 		if brickChar == 'R':
 			newBrick = Brick(join("resources","images","brick-red.png"), self.drawLocation)
+			luckyNum = randint(0,4)
+			#luckyNum = 3
+			if luckyNum == 3:
+				newBrick.addBonus(Triball(newBrick))
 		elif brickChar == 'P':
 			newBrick = Brick(join("resources","images","brick-purple.png"), self.drawLocation)
+			luckyNum = randint(0,4)
+			if luckyNum == 3:
+				newBrick.addBonus(Triball(newBrick))
 		elif brickChar == 'G':
 			newBrick = Brick(join("resources","images","brick-green.png"), self.drawLocation)
+			luckyNum = randint(0,7)
+			if luckyNum == 3:
+				newBrick.addBonus(Slowball(newBrick))
 		elif brickChar == 'O':
 			newBrick = Brick(join("resources","images","brick-orange.png"), self.drawLocation)
+			luckyNum = randint(0,5)
+			if luckyNum == 5:
+				newBrick.addBonus(Triball(newBrick))
 		elif brickChar == 'B':
 			newBrick = Brick(join("resources","images","brick-blue.png"), self.drawLocation)
+			luckyNum = randint(0,5)
+			if luckyNum == 0:
+				newBrick.addBonus(Triball(newBrick))
 		elif brickChar == 'Q':
 			newBrick = Brick(join("resources","images","brick-grey.png"), self.drawLocation, 0, False)
 		elif brickChar == '.':
@@ -187,7 +257,9 @@ class PyBreakout(Describer):
 		
 		#Draw Paddle and Ball
 		self.screen.blit(self.paddle.image, self.paddle.rect)
-		self.screen.blit(self.ball.image, self.ball.rect)
+		
+		for ball in self.balls:
+			self.screen.blit(ball.image, ball.rect)
 
 		#Draw Points Label and Points String
 		self.screen.blit(self.pointsLabel, (10,10))
@@ -200,6 +272,10 @@ class PyBreakout(Describer):
 		#Draw non-destroyed Bricks for current level
 		self.drawBricks()
 		
+		#Draw any bonuses that are on screen at the moment
+		for boni in self.bonuses:
+			self.screen.blit(boni.image, boni.rect)
+
 		#Draw Mini-paddles signifying lifes left
 		self.drawMiniPaddles()
 		
@@ -218,8 +294,9 @@ class PyBreakout(Describer):
 	def reset(self):
 		"Reset Ball, Paddle, and Speed to default positions and states. Called after a ball falls into the abyss."
 		
-		self.ball = Ball(join("resources","images","ball-mini.png"))
-		self.paddle = Paddle(join("resources","images","paddle.png"),self.ball)
+		self.balls = []
+		self.balls.append(Ball(join("resources","images","ball-mini.png")))
+		self.paddle = Paddle(join("resources","images","paddle.png"),self.balls[0])
 		
 		self.pointsColor = RGB_WHITE
 		self.running = True
@@ -231,7 +308,7 @@ class PyBreakout(Describer):
 		self.reset()
 		self.points = 0
 		self.level = 0
-		#self.level = "TEST0"
+		#self.level = "TEST1"
 		self.numDestructibleBricks = 0
 		
 		#Load bricks
@@ -239,6 +316,9 @@ class PyBreakout(Describer):
 		
 		self.numLives = 2
 		self.oneUpBonuses = [False,False]
+
+
+		
 		self.font = pygame.font.Font(join("resources","fonts","Verdana.TTF"),12)
 		self.pointsLabel = self.font.render("Points: ", True, RGB_WHITE)
 		self.pointsString = self.font.render(str(self.points), True, self.pointsColor)
@@ -275,10 +355,10 @@ class PyBreakout(Describer):
 						mousePosEqual = False
 
 			if keys[K_SPACE] or button1:
-				if self.ball.stuck:
-					self.ball.stuck = False
+				if self.balls[0].stuck:
+					self.balls[0].stuck = False
 			elif keys[K_RETURN] or button2 or button3:
-				if not self.ball.stuck:
+				if (len(self.balls) <= 0) or (len(self.balls) == 1 and not self.balls[0].stuck):
 					if self.numLives >=1:
 						self.numLives -=1
 						self.reset()
@@ -288,24 +368,34 @@ class PyBreakout(Describer):
 						self.endgame()
 			elif keys[K_y]:
 				if self.gameOver:
-					print "K_y pressed launch brand new game"
+					#print "K_y pressed launch brand new game"
 					self.startGame()
 			elif keys[K_ESCAPE]:
-				print "K_ESCAPE pressed launch brand new game"
+				#print "K_ESCAPE pressed launch brand new game"
 				exit()
 		
 			if self.running:
-				self.checkBallCollision()
-				hitWall = self.ball.autoMove()
-				if hitWall:
-					self.soundManager.play('cartoon-spring-sound',[0.2,0.2])
-					print self.ball
+				for ball in self.balls:
+					self.checkBallCollision(ball)
+				self.checkBonusCollision()
+				
+				for ball in self.balls:
+					hitWall = ball.autoMove()
+					if hitWall:
+						self.soundManager.play('cartoon-spring-sound',[0.2,0.2])
+						#print self.ball
+				
+				for boni in self.bonuses:
+					boni.moveDown(1)
+					if boni.rect.y > GB_HEIGHT:
+						#if it reaches the bottom of the screen remove it from the bonuses list
+						self.bonuses.remove(boni)
 				
 				self.pointsString = self.font.render(str(self.points), True, self.pointsColor)
 				self.updateScreen()
 				
-				if not self.ball.stuck:
-					if self.checkBallOffScreen():
+				if not self.balls[0].stuck:
+					if self.checkAllBallsOffScreen():
 						self.running = False
 						self.pointsColor = RGB_RED
 						if self.numLives == 0:
@@ -316,8 +406,9 @@ class PyBreakout(Describer):
 						self.levelString = self.font.render(str(self.level), True, RGB_WHITE)
 						self.bricks = self.loadBricks()
 						self.speed = 1
-						self.ball = Ball(join("resources","images","ball-mini.png"))
-						self.paddle = Paddle(join("resources","images","paddle.png"),self.ball)
+						self.balls = []
+						self.balls.append(Ball(join("resources","images","ball-mini.png")))
+						self.paddle = Paddle(join("resources","images","paddle.png"),self.balls[0])
 					
 
 			
@@ -333,47 +424,67 @@ class PyBreakout(Describer):
 				
 			pygame.time.wait(STARTSPEED - self.speed)
 		
-	def checkBallCollision(self):
-		if(self.ball.rect.colliderect(self.paddle.rect)):
+	def checkBallCollision(self, currentBall):
+		if(currentBall.rect.colliderect(self.paddle.rect)):
 			#Check if it is a vertical collision or horizontal collision
-			leftTen = self.paddle.rect.left + 10
-			rightTen = self.paddle.rect.left + 30
-			if self.ball.rect.left < leftTen:
-				self.ball.x_dir = -1
-				self.ball.y_dir = -1 * self.ball.y_dir
-			elif self.ball.rect.left > rightTen:
-				self.ball.x_dir = 1
-				self.ball.y_dir = -1 * self.ball.y_dir				
+			firstFifth = self.paddle.rect.left + 8
+			secondFifth = self.paddle.rect.left + 16
+			thirdFifth = self.paddle.rect.left + 24
+			fourthFifth = self.paddle.rect.left + 32
+
+			if currentBall.rect.left < firstFifth:
+				#Any incoming ball should be redirected up and left
+				print "Hit firstFifth of paddle"
+				currentBall.x_dir = -1
+				currentBall.y_dir = -1
+			elif currentBall.rect.left >= firstFifth and currentBall.rect.left < secondFifth:
+				#Any incoming ball that hits this area should be redirect in opposite y and opposite x
+				print "Hit secondFifth of paddle"
+				currentBall.x_dir = -1
+				currentBall.y_dir = -1 * currentBall.y_dir
+			elif currentBall.rect.left >= secondFifth and currentBall.rect.left < thirdFifth:
+				#Any incoming ball that hits this area should be redirect in opposite y and opposite x
+				print "Hit thirdFifth of paddle"
+				currentBall.x_dir = 0
+				currentBall.y_dir = -1 * currentBall.y_dir
+			elif currentBall.rect.left >= thirdFifth and currentBall.rect.left < fourthFifth:
+				#Any incoming ball that hits this area should be redirect in opposite y and opposite x
+				print "Hit fourthFifth of paddle"
+				currentBall.x_dir = 1
+				currentBall.y_dir = -1 * currentBall.y_dir
 			else:
-				self.ball.y_dir = -1
+				print "Hit fifthFifth of paddle"
+				currentBall.x_dir = 1
+				currentBall.y_dir = -1
+				
 			#paddle and ball collided, play appropriate sound
 			self.soundManager.play('cartoon-blurp-sound',[0.3,0.3])
 		#check for collision with any non-destroyed bricks
 		for brick in self.bricks:
 			if(brick.isDestroyed):
 				pass
-			elif(self.ball.rect.colliderect(brick.rect)):
+			elif(currentBall.rect.colliderect(brick.rect)):
 				if not brick.isDestructible:
 					#indestructible brick and ball collided, play appropriate sound
 					self.soundManager.play('cartoon-blurp-sound',[0.3,0.3])
-				testpointright = self.ball.rect.left+self.ball.rect.width+1,self.ball.rect.top
-				testpointleft = self.ball.rect.left-1,self.ball.rect.top
-				testpointtop = self.ball.rect.left,self.ball.rect.top-1
-				testpointbottom = self.ball.rect.left,self.ball.rect.top+self.ball.rect.height+1
+				testpointright = currentBall.rect.left+currentBall.rect.width+1,currentBall.rect.top
+				testpointleft = currentBall.rect.left-1,currentBall.rect.top
+				testpointtop = currentBall.rect.left,currentBall.rect.top-1
+				testpointbottom = currentBall.rect.left,currentBall.rect.top+currentBall.rect.height+1
 				
 				if(brick.rect.collidepoint(testpointright)):
 					#test if the right side of the ball collided with the brick
-					self.ball.x_dir = -1
+					currentBall.x_dir = -1
 				elif(brick.rect.collidepoint(testpointleft)):
 					#test if the left side of the ball collided with the brick
-					self.ball.x_dir = 1
+					currentBall.x_dir = 1
 				
 				if(brick.rect.collidepoint(testpointtop)):
 					#test if top of ball collided with brick
-					self.ball.y_dir = 1
+					currentBall.y_dir = 1
 				elif(brick.rect.collidepoint(testpointbottom)):
 					#test if the bottom of the ball collided with the brick
-					self.ball.y_dir = -1
+					currentBall.y_dir = -1
 				
 				self.points += brick.pointValue
 				
@@ -381,6 +492,8 @@ class PyBreakout(Describer):
 					brick.isDestroyed = True
 					self.numDestructibleBricks -=1
 					self.soundManager.play('punchhard',[0.3,0.3])
+					if brick.hasBonus:
+						self.bonuses.append(brick.bonus)
 					#only give out bonuses when a destructible brick is hit
 					if (self.points == 500 and not self.oneUpBonuses[0]):
 						self.numLives +=1
@@ -393,15 +506,32 @@ class PyBreakout(Describer):
 					#print "numDestructibleBricks = %s"%self.numDestructibleBricks
 				break
 	
+	def checkBonusCollision(self):
+		for boni in self.bonuses:
+			if boni.rect.colliderect(self.paddle.rect):
+				self.bonuses.remove(boni)
+				boni.applyBonus(self)
+		
 	def checkLevelUp(self):
 		if self.numDestructibleBricks == 0:
 			return True
 		return False
 
-	def checkBallOffScreen(self):
-		if(self.ball.rect.top >= GB_HEIGHT):
+	def checkBallOffScreen(self, ball):
+		if(ball.rect.top >= GB_HEIGHT):
 			return True
 		return False
+	
+	def checkAllBallsOffScreen(self):
+		noneAlive = True
+		for ball in self.balls:
+			#As long as one ball is still on screen keep playing
+			if self.checkBallOffScreen(ball):
+				self.balls.remove(ball)
+				print "Removed one ball from list"
+			else:
+				noneAlive = False
+		return noneAlive
 	
 	def endgame(self):
 		#print "endgame called!"
