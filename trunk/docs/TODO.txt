@@ -18,11 +18,15 @@ FIXED 1. If you have 500 points and you hit as long as you keep hitting indestru
 FIXED 2. If you right click with your last life it puts you into a quasi-gameover state.
 3. It is possible to get into infinite bounce loops with the current model and levels
 FIXED 4. Can call endgame repeatedly
+FIXED 5. Triball bonus after end of level makes things get really wacky.
+6. Another Triball bug, need to figure out why it doesn't always split into three more balls.
+7. Gameover bug, it doesn't always recognize when the last ball has truly ended
 
 
 Version 0.3 Features:
 
 * Tighter Mouse Control over the Paddle
-* 3 ball bonus, Slow ball bonus, and Sticky ball bonus
+* 3 ball bonus
+* Slow ball bonus
 DONE * Several Bug fixes
 DONE * Smaller distribution for windows version, used --bundle 2 option so that dist folder only has 5 files instead of 36
