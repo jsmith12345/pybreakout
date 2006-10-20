@@ -17,6 +17,8 @@ PADDLE_START_TOP = GB_HEIGHT - 30
 PADDLE_START_LEFT = GB_WIDTH / 2
 
 STARTSPEED = 5
+FIRST_LEVEL = 0
+LAST_LEVEL = 5
 
 class Ball(Describer):
 	"Ball class, represents the ball object for the PyBreakout game"
@@ -104,6 +106,7 @@ class Triball(Bonus):
 		self.adjustBall(ball2,-5,pybreakout)
 		pybreakout.balls.append(ball1)
 		pybreakout.balls.append(ball2)
+		#print "Adding two, len(self.balls) = " + str(len(pybreakout.balls))
 	
 		
 	def adjustBall(self,currentBall,numPixels,pybreakout):
@@ -165,6 +168,7 @@ class Brick(Describer):
 		self.isDestructible = destructible
 		self.isDestroyed = destroyed
 		self.hasBonus = False
+		self.hitCount = 0
 
 	
 	def addBonus(self, bonusType):
@@ -300,14 +304,14 @@ class PyBreakout(Describer):
 		
 		self.pointsColor = RGB_WHITE
 		self.running = True
-		self.speed = 0
+		self.speed = self.level
 		
 	def startGame(self):
 		"Start a new game, reset everything to default positions and states"
-		
+		self.level = 0
 		self.reset()
 		self.points = 0
-		self.level = 0
+		
 		#self.level = "TEST1"
 		self.numDestructibleBricks = 0
 		
@@ -375,15 +379,16 @@ class PyBreakout(Describer):
 				exit()
 		
 			if self.running:
-				for ball in self.balls:
-					self.checkBallCollision(ball)
 				self.checkBonusCollision()
 				
 				for ball in self.balls:
+					self.checkBallCollision(ball)
 					hitWall = ball.autoMove()
 					if hitWall:
 						self.soundManager.play('cartoon-spring-sound',[0.2,0.2])
 						#print self.ball
+					if(ball.rect.top >= GB_HEIGHT):
+						self.balls.remove(ball)
 				
 				for boni in self.bonuses:
 					boni.moveDown(1)
@@ -394,23 +399,26 @@ class PyBreakout(Describer):
 				self.pointsString = self.font.render(str(self.points), True, self.pointsColor)
 				self.updateScreen()
 				
-				if not self.balls[0].stuck:
-					if self.checkAllBallsOffScreen():
-						self.running = False
-						self.pointsColor = RGB_RED
-						if self.numLives == 0:
-							self.endgame()
+				#All balls have left the gameboard, need to pause and wait for Right Click
+				# or if numLives == 0, then end game.
+				if len(self.balls) == 0:
+					self.running = False
+					self.pointsColor = RGB_RED
+					if self.numLives == 0:
+						self.endgame()
+				
+				if self.checkLevelUp():
+					self.speed = self.level
+					if self.level == LAST_LEVEL:
+						self.level = -1
+					self.level += 1
+					self.levelString = self.font.render(str(self.level), True, RGB_WHITE)
+					self.bricks = self.loadBricks()
 					
-					if self.checkLevelUp():
-						self.level += 1
-						self.levelString = self.font.render(str(self.level), True, RGB_WHITE)
-						self.bricks = self.loadBricks()
-						self.speed = 1
-						self.balls = []
-						self.balls.append(Ball(join("resources","images","ball-mini.png")))
-						self.paddle = Paddle(join("resources","images","paddle.png"),self.balls[0])
+					self.balls = []
+					self.balls.append(Ball(join("resources","images","ball-mini.png")))
+					self.paddle = Paddle(join("resources","images","paddle.png"),self.balls[0])
 					
-
 			
 				#Wait a couple of milliseconds
 				currentTime = time.time()
@@ -434,26 +442,26 @@ class PyBreakout(Describer):
 
 			if currentBall.rect.left < firstFifth:
 				#Any incoming ball should be redirected up and left
-				print "Hit firstFifth of paddle"
+				#print "Hit firstFifth of paddle"
 				currentBall.x_dir = -1
 				currentBall.y_dir = -1
 			elif currentBall.rect.left >= firstFifth and currentBall.rect.left < secondFifth:
 				#Any incoming ball that hits this area should be redirect in opposite y and opposite x
-				print "Hit secondFifth of paddle"
+				#print "Hit secondFifth of paddle"
 				currentBall.x_dir = -1
 				currentBall.y_dir = -1 * currentBall.y_dir
 			elif currentBall.rect.left >= secondFifth and currentBall.rect.left < thirdFifth:
 				#Any incoming ball that hits this area should be redirect in opposite y and opposite x
-				print "Hit thirdFifth of paddle"
+				#print "Hit thirdFifth of paddle"
 				currentBall.x_dir = 0
 				currentBall.y_dir = -1 * currentBall.y_dir
 			elif currentBall.rect.left >= thirdFifth and currentBall.rect.left < fourthFifth:
 				#Any incoming ball that hits this area should be redirect in opposite y and opposite x
-				print "Hit fourthFifth of paddle"
+				#print "Hit fourthFifth of paddle"
 				currentBall.x_dir = 1
 				currentBall.y_dir = -1 * currentBall.y_dir
 			else:
-				print "Hit fifthFifth of paddle"
+				#print "Hit fifthFifth of paddle"
 				currentBall.x_dir = 1
 				currentBall.y_dir = -1
 				
@@ -466,6 +474,7 @@ class PyBreakout(Describer):
 			elif(currentBall.rect.colliderect(brick.rect)):
 				if not brick.isDestructible:
 					#indestructible brick and ball collided, play appropriate sound
+					brick.hitCount += 1
 					self.soundManager.play('cartoon-blurp-sound',[0.3,0.3])
 				testpointright = currentBall.rect.left+currentBall.rect.width+1,currentBall.rect.top
 				testpointleft = currentBall.rect.left-1,currentBall.rect.top
@@ -488,9 +497,10 @@ class PyBreakout(Describer):
 				
 				self.points += brick.pointValue
 				
-				if(brick.isDestructible):
+				if(brick.isDestructible or brick.hitCount == 4):
 					brick.isDestroyed = True
-					self.numDestructibleBricks -=1
+					if(brick.isDestructible):
+						self.numDestructibleBricks -=1
 					self.soundManager.play('punchhard',[0.3,0.3])
 					if brick.hasBonus:
 						self.bonuses.append(brick.bonus)
@@ -516,22 +526,6 @@ class PyBreakout(Describer):
 		if self.numDestructibleBricks == 0:
 			return True
 		return False
-
-	def checkBallOffScreen(self, ball):
-		if(ball.rect.top >= GB_HEIGHT):
-			return True
-		return False
-	
-	def checkAllBallsOffScreen(self):
-		noneAlive = True
-		for ball in self.balls:
-			#As long as one ball is still on screen keep playing
-			if self.checkBallOffScreen(ball):
-				self.balls.remove(ball)
-				print "Removed one ball from list"
-			else:
-				noneAlive = False
-		return noneAlive
 	
 	def endgame(self):
 		#print "endgame called!"
